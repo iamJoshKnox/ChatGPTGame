@@ -95,7 +95,6 @@ restart_text = restart_font.render("Press SPACE to restart", True, WHITE)
 restart_text_rect = restart_text.get_rect(center=(width // 2, height // 2 - 20))  # Adjust the position of the restart text
 
 # Add a list to store the high scores and initials
-high_scores = []
 
 def load_high_scores():
     try:
@@ -107,6 +106,9 @@ def load_high_scores():
     except FileNotFoundError:
         pass
 
+high_scores = []
+load_high_scores()
+
 def update_high_scores():
     high_scores.append({"score": score, "initials": initials.upper()})
     high_scores.sort(key=lambda x: x["score"], reverse=True)
@@ -114,8 +116,6 @@ def update_high_scores():
     with open("high_scores.txt", "w") as file:
         for entry in high_scores:
             file.write(f"{entry['score']},{entry['initials']}\n")
-
-load_high_scores()
 
 # Game loop
 while True:
@@ -152,8 +152,6 @@ while True:
                     # Save initials and update high scores
                     if initials != "":
                         update_high_scores()
-                        initials = ""
-                        input_active = False
                 elif event.key == K_BACKSPACE:
                     # Remove the last character from initials
                     initials = initials[:-1]
@@ -202,26 +200,52 @@ while True:
             input_active = True
             input_rect = pygame.Rect(300, 250, 45, 32)  # Adjust the position and size of the input box
 
-        # Draw the high scores
-        high_scores_text = high_scores_font.render("HIGH SCORES:", True, WHITE)
-        high_scores_text_rect = high_scores_text.get_rect(center=(width // 2, height // 2 + 75))
-        screen.blit(high_scores_text, high_scores_text_rect)
-
-        y_offset = 0
-        for i, entry in enumerate(high_scores):
-            ranking = f"#{i+1}"  # Calculate the ranking
-            initials = entry["initials"]
-            score = entry["score"]
-            high_score_text = score_font.render(f"{ranking}: {initials}: {score}", True, WHITE)
-            high_score_text_rect = high_score_text.get_rect(center=(width // 2, height // 2 + 105 + y_offset))
-            screen.blit(high_score_text, high_score_text_rect)
-            y_offset += 30
-
-        # Draw the input box if active
+        # Draw the High Score input box if active
         if input_active:
+            high_score_text = game_over_font.render("HIGH SCORE!", True, WHITE)
+            high_score_text_rect = high_score_text.get_rect(center=(width // 2, height // 2 + 100))
+            screen.blit(high_score_text, high_score_text_rect)
+
             pygame.draw.rect(screen, WHITE, input_rect, 2)
-            initials_text = score_font.render(initials, True, WHITE)
+
+            initials_text = user_high_score_font.render(initials, True, WHITE)
             screen.blit(initials_text, input_rect.move(5, 5))
+
+            user_score_text = user_high_score_font.render(f"Your Score: {score}", True, WHITE)
+            user_score_text_rect = user_score_text.get_rect(center=(width // 2, height // 2 + 150))
+            screen.blit(user_score_text, user_score_text_rect)
+
+            if event.type == KEYDOWN and input_active:
+                if event.key == K_RETURN:
+                    # Save initials and update high scores
+                    if initials != "":
+                        update_high_scores()
+                        input_active = False  # Deactivate the input box
+                        # Reset the initials variable
+                        initials = ""
+                elif event.key == K_BACKSPACE:
+                    # Remove the last character from initials
+                    initials = initials[:-1]
+                else:
+                    # Append the pressed key to initials
+                    initials += event.unicode
+        
+        if not input_active:
+            high_scores_text = high_scores_font.render("HIGH SCORES:", True, WHITE)
+            high_scores_text_rect = high_scores_text.get_rect(center=(width // 2, height // 2 + 75))
+            screen.blit(high_scores_text, high_scores_text_rect)
+
+            y_offset = 0
+            for i, entry in enumerate(high_scores):
+                ranking = f"#{i+1}"  # Calculate the ranking
+                initials = entry["initials"]
+                score = entry["score"]
+                high_score_text = score_font.render(f"{ranking}: {initials}: {score}", True, WHITE)
+                high_score_text_rect = high_score_text.get_rect(center=(width // 2, height // 2 + 105 + y_offset))
+                screen.blit(high_score_text, high_score_text_rect)
+                y_offset += 30
+
+
 
     # Draw the score
     score_text = score_font.render(f"Score: {score}", True, WHITE)
