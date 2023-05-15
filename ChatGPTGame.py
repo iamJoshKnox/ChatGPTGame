@@ -78,7 +78,7 @@ class FallingObject(pygame.sprite.Sprite):
             self.kill()  # Remove the object when it goes off the screen
 
 # Game initialization
-pygame.display.set_caption("Avoid the Objects")
+pygame.display.set_caption("TrumpRunner v1")
 clock = pygame.time.Clock()
 all_sprites = pygame.sprite.Group()
 objects = pygame.sprite.Group()
@@ -213,7 +213,7 @@ while True:
             high_score_text = score_font.render(f"{ranking}: {old_initials}: {old_score}", True, WHITE)
             high_score_text_rect = high_score_text.get_rect(center=(width // 2, height // 2 + 105 + y_offset))
             screen.blit(high_score_text, high_score_text_rect)
-            y_offset += 30
+            y_offset += 28
 
         # Draw the input box if active
         if input_active:
