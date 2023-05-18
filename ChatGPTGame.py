@@ -23,6 +23,14 @@ YELLOW = (255, 255, 0)
 WHITE = (255, 255, 255)
 GREEN = (0, 255, 0)
 
+# Cursor Blink
+cursor_visible = True
+cursor_timer = 0
+
+# High Score Blink
+high_score_visible = True
+high_score_timer = 0
+
 # Player class
 class Player(pygame.sprite.Sprite):
     def __init__(self):
@@ -95,7 +103,6 @@ game_over_font = pygame.font.SysFont(None, 60)  # Increase the game over text si
 restart_font = pygame.font.SysFont(None, 24)
 restart_text = restart_font.render("Press SPACE to restart", True, WHITE)
 restart_text_rect = restart_text.get_rect(center=(width // 2, height // 2 - 20))  # Adjust the position of the restart text
-
 
 def load_high_scores():
     high_scores = []
@@ -217,9 +224,30 @@ while True:
 
         # Draw the input box if active
         if input_active:
+                       
+            high_score_label = game_over_font.render("HIGH SCORE!", True, WHITE)
+            high_score_label_rect = high_score_label.get_rect(center=(width // 2, height // 2 - 150))
+            screen.blit(high_score_label, high_score_label_rect)
+
+            if len(initials) == 3 or not cursor_visible:
+                player_score_text = game_over_font.render(str(score), True, WHITE)
+                player_score_text_rect = player_score_text.get_rect(center=(width // 2, height // 2 - 100))
+                screen.blit(player_score_text, player_score_text_rect)
+
             pygame.draw.rect(screen, WHITE, input_rect, 2)
-            initials_text = score_font.render(initials, True, WHITE)
-            screen.blit(initials_text, input_rect.move(5, 5))
+            initials_text = score_font.render(initials.upper(), True, WHITE)
+            screen.blit(initials_text, input_rect.move(5, 8))
+
+            # Draw the blinking cursor if the length of initials is less than 3
+            if len(initials) < 3 and cursor_visible:
+                cursor_rect = pygame.Rect(input_rect.x + initials_text.get_width() + 2, input_rect.y + input_rect.height // 2 - 10, 12, input_rect.height - 14)
+                pygame.draw.rect(screen, WHITE, cursor_rect)
+            
+            # Update the cursor timer
+            cursor_timer += 1
+            if cursor_timer >= 30:
+                cursor_visible = not cursor_visible
+                cursor_timer = 0  # Reset the timer
 
     # Draw the score
     score_text = score_font.render(f"Score: {score}", True, WHITE)
