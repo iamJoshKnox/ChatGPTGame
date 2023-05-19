@@ -1,9 +1,11 @@
 import pygame
 from pygame.locals import *
+import pygame.mixer
 import random
 import sys
 
 pygame.init()
+pygame.mixer.init()
 
 # Set up the game window
 width, height = 640, 480
@@ -14,6 +16,9 @@ game_over_font = pygame.font.SysFont(None, 48)
 score_font = pygame.font.SysFont(None, 24)
 high_scores_font = pygame.font.SysFont(None, 24, bold=True)  # Set the font size to 24
 user_high_score_font = pygame.font.SysFont(None, 28, bold=True)  # Larger font size for the user's score
+
+# Theme music
+pygame.mixer.music.load("theme.mp3")
 
 # Colors
 BLACK = (0, 0, 0)
@@ -125,6 +130,9 @@ def update_high_scores():
         for entry in high_scores:
             file.write(f"{entry['score']},{entry['initials']}\n")
 
+# Turn on music
+pygame.mixer.music.play(-1)  #Plays music on infinite loop
+
 # Game loop
 while True:
     for event in pygame.event.get():
@@ -152,6 +160,8 @@ while True:
                 score = 0
                 initials = ""
                 input_active = True # Flips to false if score is too low OR if already entered.
+                # Reset music
+                pygame.mixer.music.play(-1)  #Plays music on infinite loop
 
             if event.type == KEYDOWN and input_active:
                 if event.key == K_RETURN:
@@ -162,8 +172,8 @@ while True:
                 elif event.key == K_BACKSPACE:
                     # Remove the last character from initials
                     initials = initials[:-1]
-                else:
-                    # Append the pressed key to initials
+                elif len(initials) < 3:
+                    # Append the pressed key to initials until there are 3 characters
                     initials += event.unicode
 
     if not game_over:
@@ -193,6 +203,7 @@ while True:
     all_sprites.draw(screen)
 
     if game_over:
+        pygame.mixer.music.stop()  # Stop the music if the game is over
         game_over_text = game_over_font.render("Game Over", True, YELLOW)
         game_over_text_rect = game_over_text.get_rect(center=(width // 2, height // 2 - 50))
 
