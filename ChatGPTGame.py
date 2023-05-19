@@ -90,17 +90,36 @@ class FallingObject(pygame.sprite.Sprite):
         if self.rect.top > height:
             self.kill()  # Remove the object when it goes off the screen
 
+# Power-up class
+class PowerUp(pygame.sprite.Sprite):
+    def __init__(self):
+        super(PowerUp, self).__init__()
+        self.image = pygame.image.load("coin.png")  # Load the image for the power-up
+        self.image = pygame.transform.scale(self.image, (40, 40))  # Resize the image if needed
+        self.rect = self.image.get_rect()
+        self.rect.x = random.randint(0, width - self.rect.width)
+        self.rect.y = -self.rect.height
+        self.speed = random.randint(1, 5)
+
+    def update(self):
+        self.rect.y += self.speed
+        if self.rect.top > height:
+            self.kill()  # Remove the power-up when it goes off the screen
+
+
 # Game initialization
 pygame.display.set_caption("TrumpRunner v1")
 clock = pygame.time.Clock()
 all_sprites = pygame.sprite.Group()
 objects = pygame.sprite.Group()
+power_ups = pygame.sprite.Group()
 
 player = Player()
 all_sprites.add(player)
 
 game_over = False
 score = 0
+yellow_blocks = 0
 initials = ""
 input_active = True  # Flips to false if score is too low OR if already entered.
 
@@ -186,13 +205,45 @@ while True:
 
         all_sprites.update()
 
+        # Spawn power-ups
+        if score % 1000 == 0:
+            new_power_up = PowerUp()
+            all_sprites.add(new_power_up)
+            power_ups.add(new_power_up)
+
         # Check for collisions with falling objects
         collisions = pygame.sprite.spritecollide(player, objects, True)
         for obj in collisions:
             if obj.color == GREEN:
                 score += 100
-            else:
+            elif obj.color == BLUE:
                 game_over = True
+
+        # Collision detection between player and power-ups
+        power_up_collisions = pygame.sprite.spritecollide(player, power_ups, True)
+        for power_up in power_up_collisions:
+            if power_up.rect.width == 40 and power_up.rect.height == 40:
+                # Create a small yellow block and the letter 'A' in the upper right hand of the screen
+                yellow_blocks += 1
+
+        # Shoot the yellow blocks
+        keys = pygame.key.get_pressed()
+        if keys[K_a] and yellow_blocks > 0:
+            new_yellow_block = pygame.sprite.Sprite()
+            new_yellow_block.image = pygame.Surface((20, 20))
+            new_yellow_block.image.fill(YELLOW)
+            new_yellow_block.rect = new_yellow_block.image.get_rect()
+            new_yellow_block.rect.centerx = player.rect.centerx
+            new_yellow_block.rect.bottom = player.rect.top
+            all_sprites.add(new_yellow_block)
+
+            # Check for collisions between the yellow block and blue objects
+            block_collisions = pygame.sprite.spritecollide(new_yellow_block, objects, True)
+            for obj in block_collisions:
+                if obj.color == BLUE:
+                    score += 1
+
+        yellow_blocks -= 1
 
         # Increase the score
         score += 1
