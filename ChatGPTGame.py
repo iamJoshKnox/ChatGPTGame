@@ -8,8 +8,8 @@ pygame.init()
 pygame.mixer.init()
 
 # Set up the game window
-width, height = 640, 480
-screen = pygame.display.set_mode((width, height))
+WIDTH, HEIGHT = 640, 480
+screen = pygame.display.set_mode((WIDTH, HEIGHT))
 
 # Set up fonts
 game_over_font = pygame.font.SysFont(None, 48)
@@ -43,8 +43,8 @@ class Player(pygame.sprite.Sprite):
         self.image = pygame.image.load("player.png")  # Load the player image
         self.image = pygame.transform.scale(self.image, (60, 60))  # Resize the image
         self.rect = self.image.get_rect()
-        self.rect.centerx = width // 2
-        self.rect.centery = height - 50  # Start lower on the screen
+        self.rect.centerx = WIDTH // 2
+        self.rect.centery = HEIGHT - 50  # Start lower on the screen
         self.speed = 5
 
     def update(self):
@@ -61,12 +61,12 @@ class Player(pygame.sprite.Sprite):
         # Keep the player within the screen boundaries
         if self.rect.left < 0:
             self.rect.left = 0
-        if self.rect.right > width:
-            self.rect.right = width
+        if self.rect.right > WIDTH:
+            self.rect.right = WIDTH
         if self.rect.top < 0:
             self.rect.top = 0
-        if self.rect.bottom > height:
-            self.rect.bottom = height
+        if self.rect.bottom > HEIGHT:
+            self.rect.bottom = HEIGHT
 
 # Falling object class
 class FallingObject(pygame.sprite.Sprite):
@@ -81,13 +81,13 @@ class FallingObject(pygame.sprite.Sprite):
 
         self.image = pygame.transform.scale(self.image, (40, 40))  # Resize the image if needed
         self.rect = self.image.get_rect()
-        self.rect.x = random.randint(0, width - self.rect.width)
+        self.rect.x = random.randint(0, WIDTH - self.rect.width)
         self.rect.y = -self.rect.height
         self.speed = random.randint(1, 5)
 
     def update(self):
         self.rect.y += self.speed
-        if self.rect.top > height:
+        if self.rect.top > HEIGHT:
             self.kill()  # Remove the object when it goes off the screen
 
 # Power-up class
@@ -97,13 +97,13 @@ class PowerUp(pygame.sprite.Sprite):
         self.image = pygame.image.load("coin.png")  # Load the image for the power-up
         self.image = pygame.transform.scale(self.image, (40, 40))  # Resize the image if needed
         self.rect = self.image.get_rect()
-        self.rect.x = random.randint(0, width - self.rect.width)
+        self.rect.x = random.randint(0, WIDTH - self.rect.width)
         self.rect.y = -self.rect.height
         self.speed = random.randint(1, 5)
 
     def update(self):
         self.rect.y += self.speed
-        if self.rect.top > height:
+        if self.rect.top > HEIGHT:
             self.kill()  # Remove the power-up when it goes off the screen
 
 
@@ -126,7 +126,7 @@ input_active = True  # Flips to false if score is too low OR if already entered.
 game_over_font = pygame.font.SysFont(None, 60)  # Increase the game over text size
 restart_font = pygame.font.SysFont(None, 24)
 restart_text = restart_font.render("Press SPACE to restart", True, WHITE)
-restart_text_rect = restart_text.get_rect(center=(width // 2, height // 2 - 20))  # Adjust the position of the restart text
+restart_text_rect = restart_text.get_rect(center=(WIDTH // 2, HEIGHT // 2 - 20))  # Adjust the position of the restart text
 
 def load_high_scores():
     high_scores = []
@@ -149,6 +149,16 @@ def update_high_scores():
         for entry in high_scores:
             file.write(f"{entry['score']},{entry['initials']}\n")
 
+# Draw the powerup inidcator
+def draw_powerup_indicator():
+    power_up_image = pygame.image.load("coin.png")
+    power_up_image = pygame.transform.scale(power_up_image, (30, 30))
+    power_up_spacing = 5
+    for i in range(yellow_blocks):
+        power_up_x = WIDTH - (i + 1) * (power_up_image.get_width() + power_up_spacing)
+        power_up_y = power_up_spacing * 2
+        screen.blit(power_up_image, (power_up_x, power_up_y))
+
 # Turn on music
 pygame.mixer.music.play(-1)  #Plays music on infinite loop
 
@@ -168,6 +178,25 @@ while True:
                     player.rect.y -= player.speed
                 if event.key == K_DOWN:
                     player.rect.y += player.speed
+                 
+                 # Shoot the yellow blocks
+                if event.key == [K_a] and yellow_blocks > 0:
+                    new_yellow_block = pygame.sprite.Sprite()
+                    new_yellow_block.image = pygame.Surface((20, 20))
+                    new_yellow_block.image.fill(YELLOW)
+                    new_yellow_block.rect = new_yellow_block.image.get_rect()
+                    new_yellow_block.rect.centerx = player.rect.centerx
+                    new_yellow_block.rect.bottom = player.rect.top
+                    all_sprites.add(new_yellow_block)
+
+                    # Check for collisions between the yellow block and blue objects
+                    block_collisions = pygame.sprite.spritecollide(new_yellow_block, objects, True)
+                    for obj in block_collisions:
+                        if obj.color == BLUE:
+                            score += 1
+
+                    yellow_blocks -= 1
+                    
         else:
             if event.type == KEYDOWN and event.key == K_SPACE:
                 # Reset game entities
@@ -226,25 +255,6 @@ while True:
                 # Create a small yellow block and the letter 'A' in the upper right hand of the screen
                 yellow_blocks += 1
 
-        # Shoot the yellow blocks
-        keys = pygame.key.get_pressed()
-        if keys[K_a] and yellow_blocks > 0:
-            new_yellow_block = pygame.sprite.Sprite()
-            new_yellow_block.image = pygame.Surface((20, 20))
-            new_yellow_block.image.fill(YELLOW)
-            new_yellow_block.rect = new_yellow_block.image.get_rect()
-            new_yellow_block.rect.centerx = player.rect.centerx
-            new_yellow_block.rect.bottom = player.rect.top
-            all_sprites.add(new_yellow_block)
-
-            # Check for collisions between the yellow block and blue objects
-            block_collisions = pygame.sprite.spritecollide(new_yellow_block, objects, True)
-            for obj in block_collisions:
-                if obj.color == BLUE:
-                    score += 1
-
-        yellow_blocks -= 1
-
         # Increase the score
         score += 1
 
@@ -256,7 +266,7 @@ while True:
     if game_over:
         pygame.mixer.music.stop()  # Stop the music if the game is over
         game_over_text = game_over_font.render("Game Over", True, YELLOW)
-        game_over_text_rect = game_over_text.get_rect(center=(width // 2, height // 2 - 50))
+        game_over_text_rect = game_over_text.get_rect(center=(WIDTH // 2, HEIGHT // 2 - 50))
 
         screen.blit(game_over_text, game_over_text_rect)
         screen.blit(restart_text, restart_text_rect)
@@ -271,7 +281,7 @@ while True:
 
         # Draw the high scores
         high_scores_text = high_scores_font.render("HIGH SCORES:", True, WHITE)
-        high_scores_text_rect = high_scores_text.get_rect(center=(width // 2, height // 2 + 75))
+        high_scores_text_rect = high_scores_text.get_rect(center=(WIDTH // 2, HEIGHT // 2 + 75))
         screen.blit(high_scores_text, high_scores_text_rect)
 
         y_offset = 0
@@ -280,7 +290,7 @@ while True:
             old_initials = entry["initials"]
             old_score = entry["score"]
             high_score_text = score_font.render(f"{ranking}: {old_initials}: {old_score}", True, WHITE)
-            high_score_text_rect = high_score_text.get_rect(center=(width // 2, height // 2 + 105 + y_offset))
+            high_score_text_rect = high_score_text.get_rect(center=(WIDTH // 2, HEIGHT // 2 + 105 + y_offset))
             screen.blit(high_score_text, high_score_text_rect)
             y_offset += 28
 
@@ -288,12 +298,12 @@ while True:
         if input_active:
                        
             high_score_label = game_over_font.render("HIGH SCORE!", True, WHITE)
-            high_score_label_rect = high_score_label.get_rect(center=(width // 2, height // 2 - 150))
+            high_score_label_rect = high_score_label.get_rect(center=(WIDTH // 2, HEIGHT // 2 - 150))
             screen.blit(high_score_label, high_score_label_rect)
 
             if len(initials) == 3 or not cursor_visible:
                 player_score_text = game_over_font.render(str(score), True, WHITE)
-                player_score_text_rect = player_score_text.get_rect(center=(width // 2, height // 2 - 100))
+                player_score_text_rect = player_score_text.get_rect(center=(WIDTH // 2, HEIGHT // 2 - 100))
                 screen.blit(player_score_text, player_score_text_rect)
 
             pygame.draw.rect(screen, WHITE, input_rect, 2)
@@ -314,6 +324,8 @@ while True:
     # Draw the score
     score_text = score_font.render(f"Score: {score}", True, WHITE)
     screen.blit(score_text, (10, 10))
+
+    draw_powerup_indicator()
 
     pygame.display.flip()
     clock.tick(60)
