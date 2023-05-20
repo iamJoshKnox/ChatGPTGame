@@ -170,14 +170,6 @@ while True:
             sys.exit()
         if not game_over:
             if event.type == KEYDOWN:
-                if event.key == K_LEFT:
-                    player.rect.x -= player.speed
-                if event.key == K_RIGHT:
-                    player.rect.x += player.speed
-                if event.key == K_UP:
-                    player.rect.y -= player.speed
-                if event.key == K_DOWN:
-                    player.rect.y += player.speed
                  
                  # Shoot the yellow blocks
                 if event.key == [K_a] and yellow_blocks > 0:
