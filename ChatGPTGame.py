@@ -53,6 +53,7 @@ class Player(pygame.sprite.Sprite):
         self.rect.centery = HEIGHT - 50  # Start lower on the screen
         self.speed = 5
 
+        # Add the sprite to apropriate groups upon instantiation
         all_sprites.add(self)
 
     def update(self):
@@ -81,11 +82,13 @@ class FallingObject(pygame.sprite.Sprite):
     """
     Creates a uniformly sized falling object sprite from an image file.
     The falling speed will be a random int between 1-5, unless specificied.
+
+    Treat this superclass as abstract, and only call the subclasses directly.
     """
 
     def __init__(self, image_path, speed=random.randint(1, 5)):
         super(FallingObject, self).__init__()
-        image = pygame.image.load(image_path)  # Load the image for blue object
+        image = pygame.image.load(image_path)  # Load the specified image
         self.image = pygame.transform.scale(image, (40, 40))  # Resize the image if needed
         self.speed = speed
 
@@ -93,6 +96,7 @@ class FallingObject(pygame.sprite.Sprite):
         self.rect.x = random.randint(0, WIDTH - self.rect.width)
         self.rect.y = -self.rect.height
         
+        # Add the sprite to apropriate groups upon instantiation
         falling_objects.add(self)
         all_sprites.add(self)
 
@@ -102,14 +106,21 @@ class FallingObject(pygame.sprite.Sprite):
             self.kill()  # Remove the object when it goes off the screen
 
 class FallingMoneyObject(FallingObject):
+    """ Subclass of `FallingObject` for the 'money' sprite. """
     def __init__(self):
         super(FallingMoneyObject, self).__init__("money.png")
 
 class FallingDocumentsObject(FallingObject):
+    """ Subclass of `FallingObject` for the 'document' sprite. """
     def __init__(self):
         super(FallingDocumentsObject, self).__init__("documents.png")
 
 class FallingPowerUpObject(FallingObject):
+    """
+    Subclass of `FallingObject` for the 'power-up' sprite.
+    
+    Note the speed is always maxed out to make it special.
+    """
     def __init__(self):
         super(FallingPowerUpObject, self).__init__("coin.png", 5)
 
@@ -119,7 +130,7 @@ def create_random_falling_object(difficulty=50):
     Randomly returns either a `FallingMoneyObject` or a `FallingDocumentsObject`.
     
     `difficulty` should be a number between 0-100 and represents the percentage
-    chance of returing a `FallingDocumentsObject`.
+    chance of returning a `FallingDocumentsObject`.
     """
     if (difficulty > random.randrange(0, 100)):
         return FallingDocumentsObject()
@@ -207,7 +218,6 @@ while True:
                 game_over = False
                 all_sprites.empty()
                 all_sprites.add(player)
-                falling_objects.empty()
                 # Reset scoreboard logic
                 score = 0
                 initials = ""
