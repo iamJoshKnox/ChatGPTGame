@@ -37,10 +37,11 @@ high_score_visible = True
 high_score_timer = 0
 
 # Game initialization
-pygame.display.set_caption("TrumpRunner v1")
+pygame.display.set_caption("TrumpRunner v2")
 clock = pygame.time.Clock()
 all_sprites = pygame.sprite.Group()
 falling_objects = pygame.sprite.Group()
+shooting_objects = pygame.sprite.Group() # Group to hold the shooting objects
 
 # Player class
 class Player(pygame.sprite.Sprite):
@@ -52,6 +53,7 @@ class Player(pygame.sprite.Sprite):
         self.rect.centerx = WIDTH // 2
         self.rect.centery = HEIGHT - 50  # Start lower on the screen
         self.speed = 5
+        self.shooting = False  # Track if shooting key is pressed
 
         # Add the sprite to apropriate groups upon instantiation
         all_sprites.add(self)
@@ -76,6 +78,53 @@ class Player(pygame.sprite.Sprite):
             self.rect.top = 0
         if self.rect.bottom > HEIGHT:
             self.rect.bottom = HEIGHT
+        
+        # Shoot the coin when 'a' key is pressed down
+        if keys[K_a] and not self.shooting:
+            self.shoot()
+            self.shooting = True
+
+        # Reset shooting flag when 'a' key is released
+        if not keys[K_a] and self.shooting:
+            self.shooting = False
+    
+    def shoot(self):
+        shooting_object = ShootingObject(self.rect.centerx, self.rect.top)
+        shooting_objects.add(shooting_object)
+
+# Shooting object class
+class ShootingObject(pygame.sprite.Sprite):
+    def __init__(self, x, y):
+        super(ShootingObject, self).__init__()
+        self.image = pygame.image.load("coin.png")  # Load the "coin.png" image
+        self.image = pygame.transform.scale(self.image, (30, 30))  # Resize the image if needed
+        self.rect = self.image.get_rect()
+        self.rect.centerx = x
+        self.rect.centery = y
+        self.speed = 5
+
+        # Add the sprite to appropriate groups upon instantiation
+        all_sprites.add(self)
+        shooting_objects.add(self)
+
+    def update(self):
+        self.rect.y -= self.speed
+        if self.rect.bottom < 0:
+            self.kill()  # Remove the shooting object if it goes off the screen
+
+        # Check for collisions with falling objects
+        collisions = pygame.sprite.spritecollide(self, falling_objects, True)
+        for obj in collisions:
+            if isinstance(obj, FallingDocumentsObject):
+                
+                # Play the sound effect
+                fired_sound = pygame.mixer.Sound("fired.mp3")
+                fired_sound.set_volume(.4)
+                fired_sound.play()
+                
+                #remove falling object and shooting object
+                obj.kill()
+                self.kill()
 
 # Falling object class
 class FallingObject(pygame.sprite.Sprite):
@@ -190,27 +239,6 @@ while True:
         if event.type == QUIT:
             pygame.quit()
             sys.exit()
-       
-        # # TODO: This doesn't work anyways, so leaving it commented out for now
-        # if not game_over:
-        #     if event.type == KEYDOWN:
-                 
-        #         # Shoot the yellow blocks
-        #         if event.key == [K_a] and powerup_count > 0:
-        #             new_yellow_block = pygame.sprite.Sprite()
-        #             new_yellow_block.image = pygame.Surface((20, 20))
-        #             new_yellow_block.image.fill(YELLOW)
-        #             new_yellow_block.rect = new_yellow_block.image.get_rect()
-        #             new_yellow_block.rect.centerx = player.rect.centerx
-        #             new_yellow_block.rect.bottom = player.rect.top
-
-        #             # Check for collisions between the yellow block and blue falling_objects
-        #             block_collisions = pygame.sprite.spritecollide(new_yellow_block, falling_objects, True)
-        #             for obj in block_collisions:
-        #                 if obj.color == BLUE:
-        #                     score += 1
-
-        #             powerup_count -= 1
                     
         elif game_over:
             if event.type == KEYDOWN and event.key == K_SPACE:
@@ -219,13 +247,17 @@ while True:
                 all_sprites.empty()
                 all_sprites.add(player)
                 # Reset scoreboard logic
-                score = 0
-                initials = ""
                 input_active = True # Flips to false if score is too low OR if already entered.
+                score = 0
+                powerup_count = 0
+                initials = ""
                 # Reset music
                 pygame.mixer.music.play(-1)  #Plays music on infinite loop
 
-            if event.type == KEYDOWN and input_active:
+                # Reset falling objects
+                falling_objects.empty()
+
+            elif event.type == KEYDOWN and input_active:
                 if event.key == K_RETURN:
                     # Save initials and update high scores
                     if initials != "":
@@ -243,6 +275,37 @@ while True:
         object_chance = random.randint(1, 100)
         if object_chance <= 5:
             # TODO: Use the `difficulty` parameter (based on the time passed, perhaps)
+            #Level ideas:
+            #One gold coin falls
+            #Money falls
+            #Money and documents begin to fall
+            #More documents
+            #less random documents (maybe add some diagonal shapes which will force user side-to-side)
+
+
+            #Level Timing:
+            #0:03 Super Easy Mode
+            #0:21 Baby Mode
+            #0:39 Easy Mode
+            #0:53 Normal Mode
+            #1:02 Left Hand Workout Mode
+            #1:08 Hard Mode
+            #1:14 Right Hand Workout mode
+            #1:20 Right Hand Workout mode+
+            #1:26 Dual Hand Challenge Mode
+            #1:38 Tetris Mode
+            #1:51 Extra Russian Mode
+            #2:08 Advanced Tetris Mode
+            #2:13 Tetris Master Mode
+            #2:20 Tetris Master Mode+
+            #2:25 Deceptive Mode
+            #2:35 Elite Mode
+            #2:47 Champion Mode
+            #2:56 Ultra Mega Death Mode+++
+            #3:03 Apocalypse Mode
+            #3:09 ?!?!??!?!!??!? Mode
+            #3:23 END
+
             create_random_falling_object()
 
         all_sprites.update()
@@ -259,6 +322,7 @@ while True:
                 #TODO: Early Return
             if isinstance(obj, FallingMoneyObject):
                 score += 100
+                #TODO: I'm not sure why the shooting object kills the money
             if isinstance(obj, FallingPowerUpObject):
                 #TODO: Give this a better name.
                 powerup_count += 1
