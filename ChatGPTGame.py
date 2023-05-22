@@ -36,6 +36,12 @@ cursor_timer = 0
 high_score_visible = True
 high_score_timer = 0
 
+# Game initialization
+pygame.display.set_caption("TrumpRunner v1")
+clock = pygame.time.Clock()
+all_sprites = pygame.sprite.Group()
+falling_objects = pygame.sprite.Group()
+
 # Player class
 class Player(pygame.sprite.Sprite):
     def __init__(self):
@@ -46,6 +52,9 @@ class Player(pygame.sprite.Sprite):
         self.rect.centerx = WIDTH // 2
         self.rect.centery = HEIGHT - 50  # Start lower on the screen
         self.speed = 5
+
+        # Add the sprite to apropriate groups upon instantiation
+        all_sprites.add(self)
 
     def update(self):
         keys = pygame.key.get_pressed()
@@ -70,56 +79,69 @@ class Player(pygame.sprite.Sprite):
 
 # Falling object class
 class FallingObject(pygame.sprite.Sprite):
-    def __init__(self):
-        super(FallingObject, self).__init__()
-        if random.randint(1, 2) == 1:
-            self.image = pygame.image.load("documents.png")  # Load the image for blue object
-            self.color = BLUE
-        else:
-            self.image = pygame.image.load("money.png")  # Load the image for green object
-            self.color = GREEN
+    """
+    Creates a uniformly sized falling object sprite from an image file.
+    The falling speed will be a random int between 1-5, unless specificied.
 
-        self.image = pygame.transform.scale(self.image, (40, 40))  # Resize the image if needed
+    Treat this superclass as abstract, and only call the subclasses directly.
+    """
+
+    def __init__(self, image_path, speed=random.randint(1, 5)):
+        super(FallingObject, self).__init__()
+        image = pygame.image.load(image_path)  # Load the specified image
+        self.image = pygame.transform.scale(image, (40, 40))  # Resize the image if needed
+        self.speed = speed
+
         self.rect = self.image.get_rect()
         self.rect.x = random.randint(0, WIDTH - self.rect.width)
         self.rect.y = -self.rect.height
-        self.speed = random.randint(1, 5)
+        
+        # Add the sprite to apropriate groups upon instantiation
+        falling_objects.add(self)
+        all_sprites.add(self)
 
     def update(self):
         self.rect.y += self.speed
         if self.rect.top > HEIGHT:
             self.kill()  # Remove the object when it goes off the screen
 
-# Power-up class
-class PowerUp(pygame.sprite.Sprite):
+class FallingMoneyObject(FallingObject):
+    """ Subclass of `FallingObject` for the 'money' sprite. """
     def __init__(self):
-        super(PowerUp, self).__init__()
-        self.image = pygame.image.load("coin.png")  # Load the image for the power-up
-        self.image = pygame.transform.scale(self.image, (40, 40))  # Resize the image if needed
-        self.rect = self.image.get_rect()
-        self.rect.x = random.randint(0, WIDTH - self.rect.width)
-        self.rect.y = -self.rect.height
-        self.speed = random.randint(1, 5)
+        super(FallingMoneyObject, self).__init__("money.png")
 
-    def update(self):
-        self.rect.y += self.speed
-        if self.rect.top > HEIGHT:
-            self.kill()  # Remove the power-up when it goes off the screen
+class FallingDocumentsObject(FallingObject):
+    """ Subclass of `FallingObject` for the 'document' sprite. """
+    def __init__(self):
+        super(FallingDocumentsObject, self).__init__("documents.png")
+
+class FallingPowerUpObject(FallingObject):
+    """
+    Subclass of `FallingObject` for the 'power-up' sprite.
+    
+    Note the speed is always maxed out to make it special.
+    """
+    def __init__(self):
+        super(FallingPowerUpObject, self).__init__("coin.png", 5)
 
 
-# Game initialization
-pygame.display.set_caption("TrumpRunner v1")
-clock = pygame.time.Clock()
-all_sprites = pygame.sprite.Group()
-objects = pygame.sprite.Group()
-power_ups = pygame.sprite.Group()
+def create_random_falling_object(difficulty=50):
+    """
+    Randomly returns either a `FallingMoneyObject` or a `FallingDocumentsObject`.
+    
+    `difficulty` should be a number between 0-100 and represents the percentage
+    chance of returning a `FallingDocumentsObject`.
+    """
+    if (difficulty > random.randrange(0, 100)):
+        return FallingDocumentsObject()
+    else:
+        return FallingMoneyObject()
 
 player = Player()
-all_sprites.add(player)
 
 game_over = False
 score = 0
-yellow_blocks = 0
+powerup_count = 0
 initials = ""
 input_active = True  # Flips to false if score is too low OR if already entered.
 
@@ -154,7 +176,7 @@ def draw_powerup_indicator():
     power_up_image = pygame.image.load("coin.png")
     power_up_image = pygame.transform.scale(power_up_image, (30, 30))
     power_up_spacing = 5
-    for i in range(yellow_blocks):
+    for i in range(powerup_count):
         power_up_x = WIDTH - (i + 1) * (power_up_image.get_width() + power_up_spacing)
         power_up_y = power_up_spacing * 2
         screen.blit(power_up_image, (power_up_x, power_up_y))
@@ -168,42 +190,34 @@ while True:
         if event.type == QUIT:
             pygame.quit()
             sys.exit()
-        if not game_over:
-            if event.type == KEYDOWN:
-                if event.key == K_LEFT:
-                    player.rect.x -= player.speed
-                if event.key == K_RIGHT:
-                    player.rect.x += player.speed
-                if event.key == K_UP:
-                    player.rect.y -= player.speed
-                if event.key == K_DOWN:
-                    player.rect.y += player.speed
+       
+        # # TODO: This doesn't work anyways, so leaving it commented out for now
+        # if not game_over:
+        #     if event.type == KEYDOWN:
                  
-                 # Shoot the yellow blocks
-                if event.key == [K_a] and yellow_blocks > 0:
-                    new_yellow_block = pygame.sprite.Sprite()
-                    new_yellow_block.image = pygame.Surface((20, 20))
-                    new_yellow_block.image.fill(YELLOW)
-                    new_yellow_block.rect = new_yellow_block.image.get_rect()
-                    new_yellow_block.rect.centerx = player.rect.centerx
-                    new_yellow_block.rect.bottom = player.rect.top
-                    all_sprites.add(new_yellow_block)
+        #         # Shoot the yellow blocks
+        #         if event.key == [K_a] and powerup_count > 0:
+        #             new_yellow_block = pygame.sprite.Sprite()
+        #             new_yellow_block.image = pygame.Surface((20, 20))
+        #             new_yellow_block.image.fill(YELLOW)
+        #             new_yellow_block.rect = new_yellow_block.image.get_rect()
+        #             new_yellow_block.rect.centerx = player.rect.centerx
+        #             new_yellow_block.rect.bottom = player.rect.top
 
-                    # Check for collisions between the yellow block and blue objects
-                    block_collisions = pygame.sprite.spritecollide(new_yellow_block, objects, True)
-                    for obj in block_collisions:
-                        if obj.color == BLUE:
-                            score += 1
+        #             # Check for collisions between the yellow block and blue falling_objects
+        #             block_collisions = pygame.sprite.spritecollide(new_yellow_block, falling_objects, True)
+        #             for obj in block_collisions:
+        #                 if obj.color == BLUE:
+        #                     score += 1
 
-                    yellow_blocks -= 1
+        #             powerup_count -= 1
                     
-        else:
+        elif game_over:
             if event.type == KEYDOWN and event.key == K_SPACE:
                 # Reset game entities
                 game_over = False
                 all_sprites.empty()
                 all_sprites.add(player)
-                objects.empty()
                 # Reset scoreboard logic
                 score = 0
                 initials = ""
@@ -225,35 +239,29 @@ while True:
                     initials += event.unicode
 
     if not game_over:
-        # Add falling objects
+        # Add falling falling_objects
         object_chance = random.randint(1, 100)
         if object_chance <= 5:
-            new_object = FallingObject()
-            all_sprites.add(new_object)
-            objects.add(new_object)
+            # TODO: Use the `difficulty` parameter (based on the time passed, perhaps)
+            create_random_falling_object()
 
         all_sprites.update()
 
         # Spawn power-ups
         if score % 1000 == 0:
-            new_power_up = PowerUp()
-            all_sprites.add(new_power_up)
-            power_ups.add(new_power_up)
+            new_power_up = FallingPowerUpObject()
 
-        # Check for collisions with falling objects
-        collisions = pygame.sprite.spritecollide(player, objects, True)
+        # Check for collisions with falling falling_objects
+        collisions = pygame.sprite.spritecollide(player, falling_objects, True)
         for obj in collisions:
-            if obj.color == GREEN:
-                score += 100
-            elif obj.color == BLUE:
+            if isinstance(obj, FallingDocumentsObject):
                 game_over = True
-
-        # Collision detection between player and power-ups
-        power_up_collisions = pygame.sprite.spritecollide(player, power_ups, True)
-        for power_up in power_up_collisions:
-            if power_up.rect.width == 40 and power_up.rect.height == 40:
-                # Create a small yellow block and the letter 'A' in the upper right hand of the screen
-                yellow_blocks += 1
+                #TODO: Early Return
+            if isinstance(obj, FallingMoneyObject):
+                score += 100
+            if isinstance(obj, FallingPowerUpObject):
+                #TODO: Give this a better name.
+                powerup_count += 1
 
         # Increase the score
         score += 1
