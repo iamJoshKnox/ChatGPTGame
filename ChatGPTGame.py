@@ -42,6 +42,7 @@ clock = pygame.time.Clock()
 all_sprites = pygame.sprite.Group()
 falling_objects = pygame.sprite.Group()
 shooting_objects = pygame.sprite.Group() # Group to hold the shooting objects
+building_objects = pygame.sprite.Group() # Group to hold the building objects
 
 # Player class
 class Player(pygame.sprite.Sprite):
@@ -54,6 +55,7 @@ class Player(pygame.sprite.Sprite):
         self.rect.centery = HEIGHT - 50  # Start lower on the screen
         self.speed = 5
         self.shooting = False  # Track if shooting key is pressed
+        self.building = False  # Track if building key is pressed
 
         # Add the sprite to apropriate groups upon instantiation
         all_sprites.add(self)
@@ -87,10 +89,26 @@ class Player(pygame.sprite.Sprite):
         # Reset shooting flag when 'a' key is released
         if not keys[K_a] and self.shooting:
             self.shooting = False
+
+        # Build wall when 'b' key is pressed down
+        if keys[K_b] and not self.building:
+            self.build()
+            self.building = True
+            buildawall_sound = pygame.mixer.Sound("buildawall.mp3")
+            buildawall_sound.set_volume(.4)
+            buildawall_sound.play()
+
+        # Reset build wall flag when 'b' key is released
+        if not keys[K_b] and self.building:
+            self.building = False
     
     def shoot(self):
         shooting_object = ShootingObject(self.rect.centerx, self.rect.top)
         shooting_objects.add(shooting_object)
+    
+    def build(self):
+        building_object = BuildingObject(self.rect.centerx, self.rect.top)
+        building_objects.add(building_object)
 
 # Shooting object class
 class ShootingObject(pygame.sprite.Sprite):
@@ -119,6 +137,40 @@ class ShootingObject(pygame.sprite.Sprite):
                 
                 # Play the sound effect
                 fired_sound = pygame.mixer.Sound("fired.mp3")
+                fired_sound.set_volume(.4)
+                fired_sound.play()
+                
+                #remove falling object and shooting object
+                obj.kill()
+                self.kill()
+
+# Building object class
+class BuildingObject(pygame.sprite.Sprite):
+    def __init__(self, x, y):
+        super(BuildingObject, self).__init__()
+        self.image = pygame.image.load("wall.png")  # Load the "wall.png" image
+        self.image = pygame.transform.scale(self.image, (60, 60))  # Resize the image if needed
+        self.rect = self.image.get_rect()
+        self.rect.centerx = x
+        self.rect.centery = y
+        self.speed = 5
+
+        # Add the sprite to appropriate groups upon instantiation
+        all_sprites.add(self)
+        building_objects.add(self)
+
+    def update(self):
+        self.rect.y -= self.speed
+        if self.rect.bottom < 0:
+            self.kill()  # Remove the shooting object if it goes off the screen
+
+        # Check for collisions with falling objects
+        collisions = pygame.sprite.spritecollide(self, falling_objects, True)
+        for obj in collisions:
+            if isinstance(obj, FallingDocumentsObject):
+                
+                # Play the sound effect
+                fired_sound = pygame.mixer.Sound("wall.mp3")
                 fired_sound.set_volume(.4)
                 fired_sound.play()
                 
