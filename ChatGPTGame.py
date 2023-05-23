@@ -242,6 +242,7 @@ player = Player()
 
 game_over = False
 score = 0
+level = 0
 powerup_count = 0
 initials = ""
 input_active = True  # Flips to false if score is too low OR if already entered.
@@ -301,6 +302,7 @@ while True:
                 # Reset scoreboard logic
                 input_active = True # Flips to false if score is too low OR if already entered.
                 score = 0
+                level = 0
                 powerup_count = 0
                 initials = ""
                 # Reset music
@@ -448,6 +450,10 @@ while True:
     # Draw the score
     score_text = score_font.render(f"Score: {score}", True, WHITE)
     screen.blit(score_text, (10, 10))
+
+    # Draw the level
+    level_text = score_font.render(f"Level: {level}", True, WHITE)
+    screen.blit(level_text, (13, 30))
 
     draw_powerup_indicator()
 
