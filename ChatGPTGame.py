@@ -184,6 +184,7 @@ class BuildingObject(pygame.sprite.Sprite):
     def update(self):
         if self.rect.y > 100:
             self.rect.y -= self.speed
+            self.rect.x += random.randint(-1,1)
         if self.rect.bottom < 0:
             self.kill()  # Remove the shooting object if it goes off the screen
 
