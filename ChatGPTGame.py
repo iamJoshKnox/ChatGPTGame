@@ -56,6 +56,8 @@ class Player(pygame.sprite.Sprite):
         self.speed = 5
         self.shooting = False  # Track if shooting key is pressed
         self.building = False  # Track if building key is pressed
+        self.score = 0
+        self.powerup_count = 0
 
         # Add the sprite to apropriate groups upon instantiation
         all_sprites.add(self)
@@ -94,9 +96,6 @@ class Player(pygame.sprite.Sprite):
         if keys[K_b] and not self.building:
             self.build()
             self.building = True
-            buildawall_sound = pygame.mixer.Sound("buildawall.mp3")
-            buildawall_sound.set_volume(.4)
-            buildawall_sound.play()
 
         # Reset build wall flag when 'b' key is released
         if not keys[K_b] and self.building:
@@ -105,10 +104,16 @@ class Player(pygame.sprite.Sprite):
     def shoot(self):
         shooting_object = ShootingObject(self.rect.centerx, self.rect.top)
         shooting_objects.add(shooting_object)
+        self.score -= 50  #  Each shot costs 50 score points
     
     def build(self):
-        building_object = BuildingObject(self.rect.centerx, self.rect.top)
-        building_objects.add(building_object)
+        if self.powerup_count > 0:
+            building_object = BuildingObject(self.rect.centerx, self.rect.top)
+            building_objects.add(building_object)
+            self.powerup_count -= 1  #  Each wall costs 1 powerup
+            buildawall_sound = pygame.mixer.Sound("buildawall.mp3")
+            buildawall_sound.set_volume(.4)
+            buildawall_sound.play()
 
 # Shooting object class
 class ShootingObject(pygame.sprite.Sprite):
@@ -258,15 +263,15 @@ def load_high_scores():
         with open("high_scores.txt", "r") as file:
             lines = file.readlines()
             for line in lines:
-                score, initials = line.strip().split(",")
-                high_scores.append({"score": int(score), "initials": initials.upper()})
+                player.score, initials = line.strip().split(",")
+                high_scores.append({"score": int(player.score), "initials": initials.upper()})
     except FileNotFoundError:
         pass
     return high_scores
 
 def update_high_scores():
     high_scores = load_high_scores()
-    high_scores.append({"score": score, "initials": initials.upper()})
+    high_scores.append({"score": player.score, "initials": initials.upper()})
     high_scores.sort(key=lambda x: x["score"], reverse=True)
     high_scores = high_scores[:5]  # Keep only the top 5 scores
     with open("high_scores.txt", "w") as file:
@@ -278,7 +283,7 @@ def draw_powerup_indicator():
     power_up_image = pygame.image.load("coin.png")
     power_up_image = pygame.transform.scale(power_up_image, (30, 30))
     power_up_spacing = 5
-    for i in range(powerup_count):
+    for i in range(player.powerup_count):
         power_up_x = WIDTH - (i + 1) * (power_up_image.get_width() + power_up_spacing)
         power_up_y = power_up_spacing * 2
         screen.blit(power_up_image, (power_up_x, power_up_y))
@@ -303,7 +308,7 @@ while True:
                 input_active = True # Flips to false if score is too low OR if already entered.
                 score = 0
                 level = 0
-                powerup_count = 0
+                player.powerup_count = 0
                 initials = ""
                 # Reset music
                 pygame.mixer.music.play(-1)  #Plays music on infinite loop
@@ -365,7 +370,7 @@ while True:
         all_sprites.update()
 
         # Spawn power-ups
-        if score % 1000 == 0:
+        if player.score % 1000 == 0:
             new_power_up = FallingPowerUpObject()
 
         # Check for collisions with falling falling_objects
@@ -379,10 +384,10 @@ while True:
                 #TODO: I'm not sure why the shooting object kills the money
             if isinstance(obj, FallingPowerUpObject):
                 #TODO: Give this a better name.
-                powerup_count += 1
+                player.powerup_count += 1
 
         # Increase the score
-        score += 1
+        player.score += 1
 
     screen.fill(BLACK)
 
@@ -400,7 +405,7 @@ while True:
         high_scores = load_high_scores()
 
         # Check if the player achieved a high score
-        if input_active and ((len(high_scores) < 5 or score > high_scores[-1]['score'])):
+        if input_active and ((len(high_scores) < 5 or player.score > high_scores[-1]['score'])):
             input_rect = pygame.Rect(300, 250, 45, 32)  # Adjust the position and size of the input box
         else:
             input_active = False
@@ -428,7 +433,7 @@ while True:
             screen.blit(high_score_label, high_score_label_rect)
 
             if len(initials) == 3 or not cursor_visible:
-                player_score_text = game_over_font.render(str(score), True, WHITE)
+                player_score_text = game_over_font.render(str(player.score), True, WHITE)
                 player_score_text_rect = player_score_text.get_rect(center=(WIDTH // 2, HEIGHT // 2 - 100))
                 screen.blit(player_score_text, player_score_text_rect)
 
@@ -448,7 +453,7 @@ while True:
                 cursor_timer = 0  # Reset the timer
 
     # Draw the score
-    score_text = score_font.render(f"Score: {score}", True, WHITE)
+    score_text = score_font.render(f"Score: {player.score}", True, WHITE)
     screen.blit(score_text, (10, 10))
 
     # Draw the level
