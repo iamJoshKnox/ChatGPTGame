@@ -58,6 +58,7 @@ class Player(pygame.sprite.Sprite):
         self.building = False  # Track if building key is pressed
         self.score = 0
         self.powerup_count = 0
+        self.buildmargin = 0
 
         # Add the sprite to apropriate groups upon instantiation
         all_sprites.add(self)
@@ -107,13 +108,15 @@ class Player(pygame.sprite.Sprite):
         self.score -= 50  #  Each shot costs 50 score points
     
     def build(self):
-        if self.powerup_count > 0:
-            building_object = BuildingObject(self.rect.centerx, self.rect.top)
-            building_objects.add(building_object)
+        #if self.powerup_count > 0:
             self.powerup_count -= 1  #  Each wall costs 1 powerup
             buildawall_sound = pygame.mixer.Sound("buildawall.mp3")
             buildawall_sound.set_volume(.4)
             buildawall_sound.play()
+            self.buildmargin += 4
+            for i in range (10):
+                building_object = BuildingObject(i*WIDTH/10 + 30 + self.buildmargin, HEIGHT)
+                building_objects.add(building_object)
 
 # Shooting object class
 class ShootingObject(pygame.sprite.Sprite):
@@ -136,8 +139,8 @@ class ShootingObject(pygame.sprite.Sprite):
             self.kill()  # Remove the shooting object if it goes off the screen
 
         # Check for collisions with falling objects
-        collisions = pygame.sprite.spritecollide(self, falling_objects, True)
-        for obj in collisions:
+        self.collisions = pygame.sprite.spritecollide(self, falling_objects, True)
+        for obj in self.collisions:
             if isinstance(obj, FallingDocumentsObject):
                 
                 # Play the sound effect
@@ -146,7 +149,7 @@ class ShootingObject(pygame.sprite.Sprite):
                 fired_sound.play()
                 
                 #remove falling object and shooting object
-                obj.kill()
+                #obj.kill()
                 self.kill()
 
 # Building object class
@@ -165,13 +168,14 @@ class BuildingObject(pygame.sprite.Sprite):
         building_objects.add(self)
 
     def update(self):
-        self.rect.y -= self.speed
+        if self.rect.y > 100:
+            self.rect.y -= self.speed
         if self.rect.bottom < 0:
             self.kill()  # Remove the shooting object if it goes off the screen
 
         # Check for collisions with falling objects
-        collisions = pygame.sprite.spritecollide(self, falling_objects, True)
-        for obj in collisions:
+        self.collisions = pygame.sprite.spritecollide(self, falling_objects, True)
+        for obj in self.collisions:
             if isinstance(obj, FallingDocumentsObject):
                 
                 # Play the sound effect
@@ -248,6 +252,7 @@ player = Player()
 game_over = False
 score = 0
 level = 0
+elapsed_time = 0
 powerup_count = 0
 initials = ""
 input_active = True  # Flips to false if score is too low OR if already entered.
@@ -263,8 +268,8 @@ def load_high_scores():
         with open("high_scores.txt", "r") as file:
             lines = file.readlines()
             for line in lines:
-                player.score, initials = line.strip().split(",")
-                high_scores.append({"score": int(player.score), "initials": initials.upper()})
+                score, initials = line.strip().split(",")
+                high_scores.append({"score": int(score), "initials": initials.upper()})
     except FileNotFoundError:
         pass
     return high_scores
@@ -289,7 +294,7 @@ def draw_powerup_indicator():
         screen.blit(power_up_image, (power_up_x, power_up_y))
 
 # Turn on music
-pygame.mixer.music.play(-1)  #Plays music on infinite loop
+pygame.mixer.music.play()  #Plays music on infinite loop
 
 # Game loop
 while True:
@@ -311,7 +316,7 @@ while True:
                 player.powerup_count = 0
                 initials = ""
                 # Reset music
-                pygame.mixer.music.play(-1)  #Plays music on infinite loop
+                pygame.mixer.music.play()  #Plays music on infinite loop
 
                 # Reset falling objects
                 falling_objects.empty()
@@ -330,8 +335,10 @@ while True:
                     initials += event.unicode
 
     if not game_over:
+
         # Add falling falling_objects
         object_chance = random.randint(1, 100)
+        
         if object_chance <= 5:
             # TODO: Use the `difficulty` parameter (based on the time passed, perhaps)
             #Level ideas:
@@ -380,7 +387,7 @@ while True:
                 game_over = True
                 #TODO: Early Return
             if isinstance(obj, FallingMoneyObject):
-                score += 100
+                player.score += 100
                 #TODO: I'm not sure why the shooting object kills the money
             if isinstance(obj, FallingPowerUpObject):
                 #TODO: Give this a better name.
@@ -405,7 +412,7 @@ while True:
         high_scores = load_high_scores()
 
         # Check if the player achieved a high score
-        if input_active and ((len(high_scores) < 5 or player.score > high_scores[-1]['score'])):
+        if input_active and ((len(high_scores) < 5 or int(player.score) > int(high_scores[-1]['score']))):
             input_rect = pygame.Rect(300, 250, 45, 32)  # Adjust the position and size of the input box
         else:
             input_active = False
@@ -455,6 +462,7 @@ while True:
     # Draw the score
     score_text = score_font.render(f"Score: {player.score}", True, WHITE)
     screen.blit(score_text, (10, 10))
+
 
     # Draw the level
     level_text = score_font.render(f"Level: {level}", True, WHITE)
