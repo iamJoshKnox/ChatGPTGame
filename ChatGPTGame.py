@@ -4,52 +4,68 @@ import pygame.mixer
 import random
 import sys
 
+
+"""
+PYGAME INITIALIATION
+"""
 pygame.init()
 pygame.mixer.init()
 
-# Set up the game window
-WIDTH, HEIGHT = 640, 480
-screen = pygame.display.set_mode((WIDTH, HEIGHT))
-
-# Set up fonts
-game_over_font = pygame.font.SysFont(None, 48)
-score_font = pygame.font.SysFont(None, 24)
-high_scores_font = pygame.font.SysFont(None, 24, bold=True)  # Set the font size to 24
-user_high_score_font = pygame.font.SysFont(None, 28, bold=True)  # Larger font size for the user's score
-
-# Theme music
+pygame.display.set_caption("TrumpRunner v2")
 pygame.mixer.music.load("theme.mp3")
+
+"""
+CONSTANTS
+"""
+# Window dimensions
+WIDTH, HEIGHT = 640, 480
 
 # Colors
 BLACK = (0, 0, 0)
-RED = (255, 0, 0)
-BLUE = (0, 0, 255)
-YELLOW = (255, 255, 0)
 WHITE = (255, 255, 255)
-GREEN = (0, 255, 0)
+YELLOW = (255, 255, 0)
 
-# Cursor Blink
-cursor_visible = True
-cursor_timer = 0
+# Fonts
+GAME_OVER_FONT = pygame.font.SysFont(None, 60)
+SCORE_FONT = pygame.font.SysFont(None, 24)
+HIGH_SCORE_FONT = pygame.font.SysFont(None, 24, bold=True)
+USER_HIGH_SCORE_FONT = pygame.font.SysFont(None, 28, bold=True)
+RESTART_FONT = pygame.font.SysFont(None, 24)
 
-# High Score Blink
-high_score_visible = True
-high_score_timer = 0
+"""
+GLOBAL VARIABLES
+"""
 
-# Game initialization
-pygame.display.set_caption("TrumpRunner v2")
+# Pygame Interfaces. Should only be initialized once.
+screen = pygame.display.set_mode((WIDTH, HEIGHT))
 clock = pygame.time.Clock()
-all_sprites = pygame.sprite.Group()
-falling_objects = pygame.sprite.Group()
-shooting_objects = pygame.sprite.Group() # Group to hold the shooting objects
-building_objects = pygame.sprite.Group() # Group to hold the building objects
 
-# Player class
+# Game State
+player = None # The Player Sprite
+game_over = None # Boolean whether the game is running or over
+level = 0 #The Current game level
+
+# Sprite Groups
+all_sprites = None
+falling_objects = None
+shooting_objects = None
+building_objects = None
+
+# High Score Controls TODO: This could become its own self-managed class
+is_cursor_visible = None
+cursor_timer = None
+initials = None # Player initials
+input_active = True  # Flips to false if score is too low OR if already entered.
+
+"""
+SPRITE CLASSES
+"""
+
 class Player(pygame.sprite.Sprite):
     def __init__(self):
         super(Player, self).__init__()
-        self.image = pygame.image.load("player.png")  # Load the player image
-        self.image = pygame.transform.scale(self.image, (60, 60))  # Resize the image
+        self.image = pygame.image.load("player.png")
+        self.image = pygame.transform.scale(self.image, (60, 60))
         self.rect = self.image.get_rect()
         self.rect.centerx = WIDTH // 2
         self.rect.centery = HEIGHT - 50  # Start lower on the screen
@@ -118,12 +134,11 @@ class Player(pygame.sprite.Sprite):
                 building_object = BuildingObject(i*WIDTH/10 + 30 + self.buildmargin, HEIGHT)
                 building_objects.add(building_object)
 
-# Shooting object class
 class ShootingObject(pygame.sprite.Sprite):
     def __init__(self, x, y):
         super(ShootingObject, self).__init__()
-        self.image = pygame.image.load("coin.png")  # Load the "coin.png" image
-        self.image = pygame.transform.scale(self.image, (30, 30))  # Resize the image if needed
+        self.image = pygame.image.load("coin.png")
+        self.image = pygame.transform.scale(self.image, (30, 30))
         self.rect = self.image.get_rect()
         self.rect.centerx = x
         self.rect.centery = y
@@ -152,12 +167,11 @@ class ShootingObject(pygame.sprite.Sprite):
                 obj.kill()
                 self.kill()
 
-# Building object class
 class BuildingObject(pygame.sprite.Sprite):
     def __init__(self, x, y):
         super(BuildingObject, self).__init__()
-        self.image = pygame.image.load("wall.png")  # Load the "wall.png" image
-        self.image = pygame.transform.scale(self.image, (60, 60))  # Resize the image if needed
+        self.image = pygame.image.load("wall.png")
+        self.image = pygame.transform.scale(self.image, (60, 60))
         self.rect = self.image.get_rect()
         self.rect.centerx = x
         self.rect.centery = y
@@ -187,7 +201,6 @@ class BuildingObject(pygame.sprite.Sprite):
                 obj.kill()
                 self.kill()
 
-# Falling object class
 class FallingObject(pygame.sprite.Sprite):
     """
     Creates a uniformly sized falling object sprite from an image file.
@@ -234,6 +247,9 @@ class FallingPowerUpObject(FallingObject):
     def __init__(self):
         super(FallingPowerUpObject, self).__init__("coin.png", 5)
 
+"""
+UTILITIES
+"""
 
 def create_random_falling_object(difficulty=50):
     """
@@ -246,21 +262,6 @@ def create_random_falling_object(difficulty=50):
         return FallingDocumentsObject()
     else:
         return FallingMoneyObject()
-
-player = Player()
-
-game_over = False
-score = 0
-level = 0
-elapsed_time = 0
-powerup_count = 0
-initials = ""
-input_active = True  # Flips to false if score is too low OR if already entered.
-
-game_over_font = pygame.font.SysFont(None, 60)  # Increase the game over text size
-restart_font = pygame.font.SysFont(None, 24)
-restart_text = restart_font.render("Press SPACE to restart", True, WHITE)
-restart_text_rect = restart_text.get_rect(center=(WIDTH // 2, HEIGHT // 2 - 20))  # Adjust the position of the restart text
 
 def load_high_scores():
     high_scores = []
@@ -293,8 +294,48 @@ def draw_powerup_indicator():
         power_up_y = power_up_spacing * 2
         screen.blit(power_up_image, (power_up_x, power_up_y))
 
-# Turn on music
-pygame.mixer.music.play()  #Plays music on infinite loop
+def restart_game():
+    """
+        Reset everything except for the screen and the clock itself
+
+        Should be called at the start of every new game.
+    """
+    global all_sprites, falling_objects, shooting_objects, building_objects
+    global player, game_over, level
+    global is_cursor_visible, cursor_timer, initials, input_active
+
+    pygame.mixer.music.play()  # Start music at beginning then play on loop.
+
+    # Empty then reset sprite Groups
+    if all_sprites is not None:
+        all_sprites.empty()
+    if falling_objects is not None:
+        falling_objects.empty()
+    if shooting_objects is not None:
+        shooting_objects.empty()
+    if building_objects is not None:
+        building_objects.empty()
+
+    # Do this before re-creating sprites, as they will auto add themselves.
+    all_sprites = pygame.sprite.Group()
+    falling_objects = pygame.sprite.Group()
+    shooting_objects = pygame.sprite.Group()
+    building_objects = pygame.sprite.Group()
+
+    player = Player()
+    game_over = False
+    level = 0
+
+    is_cursor_visible = True
+    cursor_timer = 0
+    initials = ""
+    input_active = True  # Flips to false if score is too low OR if already entered.
+
+
+"""
+GAME LOOP
+"""
+restart_game()
 
 # Game loop
 while True:
@@ -305,21 +346,7 @@ while True:
                     
         elif game_over:
             if event.type == KEYDOWN and event.key == K_SPACE:
-                # Reset game entities
-                game_over = False
-                all_sprites.empty()
-                all_sprites.add(player)
-                # Reset scoreboard logic
-                input_active = True # Flips to false if score is too low OR if already entered.
-                score = 0
-                level = 0
-                player.powerup_count = 0
-                initials = ""
-                # Reset music
-                pygame.mixer.music.play()  #Plays music on infinite loop
-
-                # Reset falling objects
-                falling_objects.empty()
+                restart_game();
 
             elif event.type == KEYDOWN and input_active:
                 if event.key == K_RETURN:
@@ -403,8 +430,11 @@ while True:
 
     if game_over:
         pygame.mixer.music.stop()  # Stop the music if the game is over
-        game_over_text = game_over_font.render("Game Over", True, YELLOW)
+        
+        game_over_text = GAME_OVER_FONT.render("Game Over", True, YELLOW)
         game_over_text_rect = game_over_text.get_rect(center=(WIDTH // 2, HEIGHT // 2 - 50))
+        restart_text = RESTART_FONT.render("Press SPACE to restart", True, WHITE)
+        restart_text_rect = restart_text.get_rect(center=(WIDTH // 2, HEIGHT // 2 - 20))
 
         screen.blit(game_over_text, game_over_text_rect)
         screen.blit(restart_text, restart_text_rect)
@@ -418,7 +448,7 @@ while True:
             input_active = False
 
         # Draw the high scores
-        high_scores_text = high_scores_font.render("HIGH SCORES:", True, WHITE)
+        high_scores_text = HIGH_SCORE_FONT.render("HIGH SCORES:", True, WHITE)
         high_scores_text_rect = high_scores_text.get_rect(center=(WIDTH // 2, HEIGHT // 2 + 75))
         screen.blit(high_scores_text, high_scores_text_rect)
 
@@ -427,7 +457,7 @@ while True:
             ranking = f"#{i+1}"  # Calculate the ranking
             old_initials = entry["initials"]
             old_score = entry["score"]
-            high_score_text = score_font.render(f"{ranking}: {old_initials}: {old_score}", True, WHITE)
+            high_score_text = SCORE_FONT.render(f"{ranking}: {old_initials}: {old_score}", True, WHITE)
             high_score_text_rect = high_score_text.get_rect(center=(WIDTH // 2, HEIGHT // 2 + 105 + y_offset))
             screen.blit(high_score_text, high_score_text_rect)
             y_offset += 28
@@ -435,37 +465,36 @@ while True:
         # Draw the input box if active
         if input_active:
                        
-            high_score_label = game_over_font.render("HIGH SCORE!", True, WHITE)
+            high_score_label = GAME_OVER_FONT.render("HIGH SCORE!", True, WHITE)
             high_score_label_rect = high_score_label.get_rect(center=(WIDTH // 2, HEIGHT // 2 - 150))
             screen.blit(high_score_label, high_score_label_rect)
 
-            if len(initials) == 3 or not cursor_visible:
-                player_score_text = game_over_font.render(str(player.score), True, WHITE)
+            if len(initials) == 3 or not is_cursor_visible:
+                player_score_text = GAME_OVER_FONT.render(str(player.score), True, WHITE)
                 player_score_text_rect = player_score_text.get_rect(center=(WIDTH // 2, HEIGHT // 2 - 100))
                 screen.blit(player_score_text, player_score_text_rect)
 
             pygame.draw.rect(screen, WHITE, input_rect, 2)
-            initials_text = score_font.render(initials.upper(), True, WHITE)
+            initials_text = SCORE_FONT.render(initials.upper(), True, WHITE)
             screen.blit(initials_text, input_rect.move(5, 8))
 
             # Draw the blinking cursor if the length of initials is less than 3
-            if len(initials) < 3 and cursor_visible:
+            if len(initials) < 3 and is_cursor_visible:
                 cursor_rect = pygame.Rect(input_rect.x + initials_text.get_width() + 2, input_rect.y + input_rect.height // 2 - 10, 12, input_rect.height - 14)
                 pygame.draw.rect(screen, WHITE, cursor_rect)
             
             # Update the cursor timer
             cursor_timer += 1
             if cursor_timer >= 30:
-                cursor_visible = not cursor_visible
+                is_cursor_visible = not is_cursor_visible
                 cursor_timer = 0  # Reset the timer
 
     # Draw the score
-    score_text = score_font.render(f"Score: {player.score}", True, WHITE)
+    score_text = SCORE_FONT.render(f"Score: {player.score}", True, WHITE)
     screen.blit(score_text, (10, 10))
 
-
     # Draw the level
-    level_text = score_font.render(f"Level: {level}", True, WHITE)
+    level_text = SCORE_FONT.render(f"Level: {level}", True, WHITE)
     screen.blit(level_text, (13, 30))
 
     draw_powerup_indicator()
