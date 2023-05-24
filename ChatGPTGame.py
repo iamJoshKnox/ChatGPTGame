@@ -139,7 +139,7 @@ class ShootingObject(pygame.sprite.Sprite):
             self.kill()  # Remove the shooting object if it goes off the screen
 
         # Check for collisions with falling objects
-        self.collisions = pygame.sprite.spritecollide(self, falling_objects, True)
+        self.collisions = pygame.sprite.spritecollide(self, falling_objects, False)
         for obj in self.collisions:
             if isinstance(obj, FallingDocumentsObject):
                 
@@ -149,7 +149,7 @@ class ShootingObject(pygame.sprite.Sprite):
                 fired_sound.play()
                 
                 #remove falling object and shooting object
-                #obj.kill()
+                obj.kill()
                 self.kill()
 
 # Building object class
@@ -174,7 +174,7 @@ class BuildingObject(pygame.sprite.Sprite):
             self.kill()  # Remove the shooting object if it goes off the screen
 
         # Check for collisions with falling objects
-        self.collisions = pygame.sprite.spritecollide(self, falling_objects, True)
+        self.collisions = pygame.sprite.spritecollide(self, falling_objects, False)
         for obj in self.collisions:
             if isinstance(obj, FallingDocumentsObject):
                 
