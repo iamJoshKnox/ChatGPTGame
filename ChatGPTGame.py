@@ -3,6 +3,7 @@ from pygame.locals import *
 import pygame.mixer
 import random
 import sys
+import time
 
 
 """
@@ -39,11 +40,13 @@ GLOBAL VARIABLES
 # Pygame Interfaces. Should only be initialized once.
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 clock = pygame.time.Clock()
+start_time = time.time()
 
 # Game State
 player = None # The Player Sprite
 game_over = None # Boolean whether the game is running or over
 level = 0 #The Current game level
+level_timer = pygame.time.get_ticks()
 
 # Sprite Groups
 all_sprites = None
@@ -302,7 +305,7 @@ def restart_game():
         Should be called at the start of every new game.
     """
     global all_sprites, falling_objects, shooting_objects, building_objects
-    global player, game_over, level
+    global player, game_over, level, start_time
     global is_cursor_visible, cursor_timer, initials, input_active
 
     pygame.mixer.music.play()  # Start music at beginning then play on loop.
@@ -326,6 +329,9 @@ def restart_game():
     player = Player()
     game_over = False
     level = 0
+    
+    # Restart game clock
+    start_time = time.time()
 
     is_cursor_visible = True
     cursor_timer = 0
@@ -363,6 +369,9 @@ while True:
                     initials += event.unicode
 
     if not game_over:
+    
+        # Calculate elapsed time
+        elapsed_time = int(time.time() - start_time)
 
         # Add falling falling_objects
         object_chance = random.randint(1, 100)
@@ -423,7 +432,7 @@ while True:
 
         # Increase the score
         player.score += 1
-
+    
     screen.fill(BLACK)
 
     # Draw sprites
@@ -489,6 +498,15 @@ while True:
             if cursor_timer >= 30:
                 is_cursor_visible = not is_cursor_visible
                 cursor_timer = 0  # Reset the timer
+
+    # Render the elapsed time as text
+    time_text = SCORE_FONT.render("Time: {}".format(elapsed_time), True, WHITE)
+    screen.blit(time_text, (200, 10))
+
+    #if elapsed_time == 1:  <- how to make this work?
+     #   level += 1
+    #if elapsed_time == 10:
+     #   level+= 1
 
     # Draw the score
     score_text = SCORE_FONT.render(f"Score: {player.score}", True, WHITE)
