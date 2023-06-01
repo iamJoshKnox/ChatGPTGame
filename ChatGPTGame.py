@@ -47,6 +47,8 @@ player = None # The Player Sprite
 game_over = None # Boolean whether the game is running or over
 level = 0 #The Current game level
 level_timer = pygame.time.get_ticks()
+level_intervals = [18,36,50,59,65,71,77,83,95,108,125,130,137,142,164,173,180,191] 
+#TODO: Would like there to be 20 levels - look into how to split
 
 # Sprite Groups
 all_sprites = None
@@ -373,6 +375,11 @@ while True:
         # Calculate elapsed time
         elapsed_time = int(time.time() - start_time)
 
+        for interval in level_intervals:
+            if elapsed_time >= interval and level < (level_intervals.index(interval) + 1):
+                level = level_intervals.index(interval) + 1
+
+
         # Add falling falling_objects
         object_chance = random.randint(1, 100)
         
@@ -502,11 +509,6 @@ while True:
     # Render the elapsed time as text
     time_text = SCORE_FONT.render("Time: {}".format(elapsed_time), True, WHITE)
     screen.blit(time_text, (200, 10))
-
-    #if elapsed_time == 1:  <- how to make this work?
-     #   level += 1
-    #if elapsed_time == 10:
-     #   level+= 1
 
     # Draw the score
     score_text = SCORE_FONT.render(f"Score: {player.score}", True, WHITE)
