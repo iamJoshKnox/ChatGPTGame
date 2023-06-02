@@ -45,16 +45,41 @@ start_time = time.time()
 # Game State
 player = None # The Player Sprite
 game_over = None # Boolean whether the game is running or over
+win = False
+fail = False
 level = 0 #The Current game level
 level_timer = pygame.time.get_ticks()
-level_intervals = [18,36,50,59,65,71,77,83,95,108,125,130,137,142,164,173,180,191] 
+level_intervals = [2,18,36,50,59,65,71,77,83,95,108,125,130,137,142,162,164,173,180,191]
 #TODO: Would like there to be 20 levels - look into how to split
+   #Level Timing:
+            #0:03 Super Easy Mode
+            #0:21 Baby Mode
+            #0:39 Easy Mode
+            #0:53 Normal Mode
+            #1:02 Left Hand Workout Mode
+            #1:08 Hard Mode
+            #1:14 Right Hand Workout mode
+            #1:20 Right Hand Workout mode+
+            #1:26 Dual Hand Challenge Mode
+            #1:38 Tetris Mode
+            #1:51 Extra Russian Mode
+            #2:08 Advanced Tetris Mode
+            #2:13 Tetris Master Mode
+            #2:20 Tetris Master Mode+
+            #2:25 Deceptive Mode
+            #2:35 Elite Mode
+            #2:47 Champion Mode
+            #2:56 Ultra Mega Death Mode+++
+            #3:03 Apocalypse Mode
+            #3:09 ?!?!??!?!!??!? Mode
+            #3:23 END
 
 # Sprite Groups
 all_sprites = None
 falling_objects = None
 shooting_objects = None
 building_objects = None
+house_objects = None
 
 # High Score Controls TODO: This could become its own self-managed class
 is_cursor_visible = None
@@ -189,7 +214,7 @@ class BuildingObject(pygame.sprite.Sprite):
     def update(self):
         if self.rect.y > 100:
             self.rect.y -= self.speed
-            self.rect.x += random.randint(-1,1)
+            self.rect.x += random.randint(-2,2)
         if self.rect.bottom < 0:
             self.kill()  # Remove the shooting object if it goes off the screen
 
@@ -237,12 +262,12 @@ class FallingObject(pygame.sprite.Sprite):
 class FallingMoneyObject(FallingObject):
     """ Subclass of `FallingObject` for the 'money' sprite. """
     def __init__(self):
-        super(FallingMoneyObject, self).__init__("money.png")
+        super(FallingMoneyObject, self).__init__("money.png",random.randint(1, 5 + round(level / 4 )))
 
 class FallingDocumentsObject(FallingObject):
     """ Subclass of `FallingObject` for the 'document' sprite. """
     def __init__(self):
-        super(FallingDocumentsObject, self).__init__("documents.png")
+        super(FallingDocumentsObject, self).__init__("documents.png",random.randint(1, 5 + round(level / 4 )))
 
 class FallingPowerUpObject(FallingObject):
     """
@@ -252,6 +277,11 @@ class FallingPowerUpObject(FallingObject):
     """
     def __init__(self):
         super(FallingPowerUpObject, self).__init__("coin.png", 5)
+
+class FallingHouseObject(FallingObject):
+    """ Subclass of `FallingObject` for the 'document' sprite. """
+    def __init__(self):
+        super(FallingHouseObject, self).__init__("house.png", 1)
 
 """
 UTILITIES
@@ -307,7 +337,7 @@ def restart_game():
         Should be called at the start of every new game.
     """
     global all_sprites, falling_objects, shooting_objects, building_objects
-    global player, game_over, level, start_time
+    global player, game_over, level, start_time, win, fail
     global is_cursor_visible, cursor_timer, initials, input_active
 
     pygame.mixer.music.play()  # Start music at beginning then play on loop.
@@ -331,6 +361,8 @@ def restart_game():
     player = Player()
     game_over = False
     level = 0
+    win = False
+    fail = False
     
     # Restart game clock
     start_time = time.time()
@@ -354,8 +386,14 @@ while True:
             sys.exit()
                     
         elif game_over:
+            if not fail:
+                fail = True
+                fail_sound = pygame.mixer.Sound("fail.mp3")
+                fail_sound.set_volume(.8)
+                fail_sound.play()
+
             if event.type == KEYDOWN and event.key == K_SPACE:
-                restart_game();
+                restart_game()
 
             elif event.type == KEYDOWN and input_active:
                 if event.key == K_RETURN:
@@ -371,53 +409,46 @@ while True:
                     initials += event.unicode
 
     if not game_over:
-    
+        
         # Calculate elapsed time
         elapsed_time = int(time.time() - start_time)
 
+        # Calculate level based on elapsed time
         for interval in level_intervals:
             if elapsed_time >= interval and level < (level_intervals.index(interval) + 1):
                 level = level_intervals.index(interval) + 1
 
-
+            
         # Add falling falling_objects
         object_chance = random.randint(1, 100)
         
-        if object_chance <= 5:
-            # TODO: Use the `difficulty` parameter (based on the time passed, perhaps)
-            #Level ideas:
-            #One gold coin falls
-            #Money falls
-            #Money and documents begin to fall
-            #More documents
-            #less random documents (maybe add some diagonal shapes which will force user side-to-side)
+        #Delay so only coin falls at first
+        if level == 0:
+            if object_chance < 0:
+               create_random_falling_object(0) 
+        """
+        Test for falling house end-game logic
+        if level == 1:
+            if not win:
+                win = True
+                house = FallingHouseObject()
+        """
 
-
-            #Level Timing:
-            #0:03 Super Easy Mode
-            #0:21 Baby Mode
-            #0:39 Easy Mode
-            #0:53 Normal Mode
-            #1:02 Left Hand Workout Mode
-            #1:08 Hard Mode
-            #1:14 Right Hand Workout mode
-            #1:20 Right Hand Workout mode+
-            #1:26 Dual Hand Challenge Mode
-            #1:38 Tetris Mode
-            #1:51 Extra Russian Mode
-            #2:08 Advanced Tetris Mode
-            #2:13 Tetris Master Mode
-            #2:20 Tetris Master Mode+
-            #2:25 Deceptive Mode
-            #2:35 Elite Mode
-            #2:47 Champion Mode
-            #2:56 Ultra Mega Death Mode+++
-            #3:03 Apocalypse Mode
-            #3:09 ?!?!??!?!!??!? Mode
-            #3:23 END
-
-            create_random_falling_object()
-
+        #Level difficulty logic
+        if level == 1:
+            if object_chance <= 4:
+                create_random_falling_object(0)
+        elif level < 10:
+            if object_chance <= 3 + round(level/2):
+                create_random_falling_object(50)
+        elif level < 20:
+            if object_chance < level:
+                create_random_falling_object(70)
+        elif level == 20:
+            if not win:
+                win = True
+                house = FallingHouseObject()
+        
         all_sprites.update()
 
         # Spawn power-ups
@@ -432,10 +463,15 @@ while True:
                 #TODO: Early Return
             if isinstance(obj, FallingMoneyObject):
                 player.score += 100
-                #TODO: I'm not sure why the shooting object kills the money
             if isinstance(obj, FallingPowerUpObject):
                 #TODO: Give this a better name.
                 player.powerup_count += 1
+            if isinstance(obj, FallingHouseObject):
+                fail = True
+                fail_sound = pygame.mixer.Sound("success.mp3")
+                fail_sound.set_volume(.8)
+                fail_sound.play()
+                game_over = True
 
         # Increase the score
         player.score += 1
@@ -508,15 +544,25 @@ while True:
 
     # Render the elapsed time as text
     time_text = SCORE_FONT.render("Time: {}".format(elapsed_time), True, WHITE)
-    screen.blit(time_text, (200, 10))
+    #screen.blit(time_text, (15, 50))
 
     # Draw the score
     score_text = SCORE_FONT.render(f"Score: {player.score}", True, WHITE)
-    screen.blit(score_text, (10, 10))
+    screen.blit(score_text, (10, 30))
 
     # Draw the level
     level_text = SCORE_FONT.render(f"Level: {level}", True, WHITE)
-    screen.blit(level_text, (13, 30))
+    screen.blit(level_text, (13, 10))
+
+    # Press A
+    if level == 3:
+        level_text = SCORE_FONT.render(f"|PRESS A|", True, WHITE)
+        screen.blit(level_text, (270, 10))
+
+     # Press B
+    if level == 7:
+        level_text = SCORE_FONT.render(f"|PRESS B|", True, WHITE)
+        screen.blit(level_text, (270, 10))
 
     draw_powerup_indicator()
 
