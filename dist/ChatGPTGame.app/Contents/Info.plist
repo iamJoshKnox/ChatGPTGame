@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleDisplayName</key>
+	<string>ChatGPTGame</string>
+	<key>CFBundleExecutable</key>
+	<string>ChatGPTGame</string>
+	<key>CFBundleIconFile</key>
+	<string>generated-98be3f15947981c29b69dc3fd8c11686f01c79998f788377ebca82c86c49e895.icns</string>
+	<key>CFBundleIdentifier</key>
+	<string>ChatGPTGame</string>
+	<key>CFBundleInfoDictionaryVersion</key>
+	<string>6.0</string>
+	<key>CFBundleName</key>
+	<string>ChatGPTGame</string>
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+	<key>CFBundleShortVersionString</key>
+	<string>0.0.0</string>
+	<key>NSHighResolutionCapable</key>
+	<true/>
+</dict>
+</plist>
