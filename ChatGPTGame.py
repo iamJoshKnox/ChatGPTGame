@@ -282,6 +282,12 @@ class FallingHouseObject(FallingObject):
     """ Subclass of `FallingObject` for the 'document' sprite. """
     def __init__(self):
         super(FallingHouseObject, self).__init__("house.png", 1)
+        self.image = pygame.transform.scale(self.image, (150, 150))  # Resize the image if needed
+        self.rect.x = WIDTH / 2 - 75
+    
+    def update(self):
+        if self.rect.y < HEIGHT / 2:
+            self.rect.y += self.speed
 
 """
 UTILITIES
@@ -426,8 +432,8 @@ while True:
         if level == 0:
             if object_chance < 0:
                create_random_falling_object(0) 
-        """
-        Test for falling house end-game logic
+        """ 
+       # Test for falling house end-game logic
         if level == 1:
             if not win:
                 win = True
