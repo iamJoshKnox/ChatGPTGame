@@ -1,0 +1,3 @@
+([('ChatGPTGame',
+   '/Users/jtknox/Documents/ChatGPTGame/dist/ChatGPTGame',
+   'EXECUTABLE')],)
